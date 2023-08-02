@@ -482,7 +482,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/12/10/log4j/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/12/10/jndi/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="">
@@ -501,7 +501,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2022/12/10/log4j/" itemprop="url">CVE-2021-44228 (Log4j2 RCE) 漏洞学习</a></h1>
+                <a class="post-title-link" href="/2022/12/10/jndi/" itemprop="url">JNDI注入漏洞学习</a></h1>
         
 
         <div class="post-meta">
@@ -553,12 +553,13 @@
       
         
           
-          test
-
-          
+          基本原理：
+https://xz.aliyun.com/t/6633#toc-7
+将恶意的Reference类绑定在RMI注册表中，其中恶意引用指向远程恶意的class文件，当用户在JNDI客户端的lookup()函数参数外部可控或Reference类构造方法的classFactoryLocatio
+          ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2022/12/10/log4j/#more" rel="contents">
+            <a class="btn" href="/2022/12/10/jndi/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
