@@ -79,18 +79,20 @@
 
 
 
-<meta name="description" content="基本原理： https:&#x2F;&#x2F;xz.aliyun.com&#x2F;t&#x2F;6633#toc-7 将恶意的Reference类绑定在RMI注册表中，其中恶意引用指向远程恶意的class文件，当用户在JNDI客户端的lookup()函数参数外部可控或Reference类构造方法的classFactoryLocation参数外部可控时，会使用户的JNDI客户端访问RMI注册表中绑定的恶意Reference类，从而加载">
+<meta name="description" content="RMI基本概念RPC (Remote Procedure Call)，远程过程调用，像本地调用方法⼀样调用⼀个远程方法。 RMI (Remote Method Invocation)，Java远程⽅法调⽤，⼀种⽤于实现远程过程调⽤的应⽤程序编程接⼝，是RPC的一种具体实现，可以允许运行在一个Java虚拟机的对象调用运行在另一个Java虚拟机上的对象（的方法），实现了Java程序之间跨JVM的远程通">
 <meta property="og:type" content="article">
-<meta property="og:title" content="JNDI注入漏洞学习">
+<meta property="og:title" content="Java RMI &amp; JNDI注入漏洞学习">
 <meta property="og:url" content="http://example.com/2022/12/10/jndi/index.html">
 <meta property="og:site_name" content="Mxy&#39;s Blog">
-<meta property="og:description" content="基本原理： https:&#x2F;&#x2F;xz.aliyun.com&#x2F;t&#x2F;6633#toc-7 将恶意的Reference类绑定在RMI注册表中，其中恶意引用指向远程恶意的class文件，当用户在JNDI客户端的lookup()函数参数外部可控或Reference类构造方法的classFactoryLocation参数外部可控时，会使用户的JNDI客户端访问RMI注册表中绑定的恶意Reference类，从而加载">
+<meta property="og:description" content="RMI基本概念RPC (Remote Procedure Call)，远程过程调用，像本地调用方法⼀样调用⼀个远程方法。 RMI (Remote Method Invocation)，Java远程⽅法调⽤，⼀种⽤于实现远程过程调⽤的应⽤程序编程接⼝，是RPC的一种具体实现，可以允许运行在一个Java虚拟机的对象调用运行在另一个Java虚拟机上的对象（的方法），实现了Java程序之间跨JVM的远程通">
 <meta property="og:locale">
+<meta property="og:image" content="c:\Users\13685\AppData\Roaming\Typora\typora-user-images\image-20230806134434693.png">
 <meta property="article:published_time" content="2022-12-10T03:10:40.000Z">
-<meta property="article:modified_time" content="2023-08-02T02:28:30.435Z">
+<meta property="article:modified_time" content="2023-08-15T16:54:00.687Z">
 <meta property="article:author" content="me0wxy">
 <meta property="article:tag" content="Java Web">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="c:\Users\13685\AppData\Roaming\Typora\typora-user-images\image-20230806134434693.png">
 
 
 
@@ -126,7 +128,7 @@
 
 
 
-  <title>JNDI注入漏洞学习 | Mxy's Blog</title>
+  <title>Java RMI & JNDI注入漏洞学习 | Mxy's Blog</title>
   
 
 
@@ -250,7 +252,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">JNDI注入漏洞学习</h1>
+          <h1 class="post-title" itemprop="name headline">Java RMI & JNDI注入漏洞学习</h1>
         
 
         <div class="post-meta">
@@ -300,22 +302,57 @@
       
 
       
-        <p>基本原理：</p>
+        <h1 id="RMI"><a href="#RMI" class="headerlink" title="RMI"></a>RMI</h1><h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a><strong>基本概念</strong></h2><p>RPC (Remote Procedure Call)，远程过程调用，像本地调用方法⼀样调用⼀个远程方法。</p>
+<p>RMI (Remote Method Invocation)，Java远程⽅法调⽤，⼀种⽤于实现远程过程调⽤的应⽤程序编程接⼝，是RPC的一种具体实现，可以允许运行在一个Java虚拟机的对象调用运行在另一个Java虚拟机上的对象（的方法），实现了Java程序之间跨JVM的远程通信。</p>
+<p>远程服务器实现具体的Java方法并提供接口，客户端本地仅需根据接口类的定义，提供相应的参数即可调用远程方法并获取执行结果，使得分布在不同的JVM中的对象的外表和行为都像本地对象一样。</p>
+<h2 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h2><p>实现RMI意味着需要一个 Server 端和一个 Client 端。Server 端通常会创建一个对象，并使之可以被远程访问。 这个对象被称为远程对象。Server 端需要注册这个对象可以被 Client 远程访问。Client 端调用可以被远程访问的对象上的方法，Client 端就可以和 Server 端进行通信并相互传递信息。</p>
+<img src="C:\Users\13685\AppData\Roaming\Typora\typora-user-images\image-20230806134434693.png" alt="image-20230806134434693" style="zoom:67%;" />
+
+<p>从图中可以看到，Client 端有一个被称 Stub 的东西，有时也会被称为存根，它是 RMI Client 的代理对象，Stub 的主要功能是请求远程方法时构造一个信息块，RMI 协议会把这个信息块发送给 Server 端。这个信息块由几个部分组成：</p>
+<ul>
+<li>远程对象标识符</li>
+<li>调用的方法描述</li>
+<li>编组后的参数值（RMI协议中使用的是对象序列化）</li>
+</ul>
+<p>既然 Client 端有一个 Stub 可以构造信息块发送给 Server 端，那么 RMI Server 端必定会有一个接收这个信息块的代理对象，称为 Skeleton。<br>它主要的工作是：</p>
+<ul>
+<li>解析信息块中的调用对象标识符和方法描述，在 Server 端调用具体的对象方法</li>
+<li>取得调用的返回值或者异常值</li>
+<li>把返回值进行编组，返回给客户端 Stub</li>
+</ul>
+<p>此外还有一个比较重要的结构即RMI Registry：注册中⼼，类⽐成RMI的电话薄。类似⼀个⽹关，⾃⼰并不执⾏远程⽅法。但服务端可以在上⾯注册⼀个Name到对象的绑定关系。客户端通过这个Name向注册中⼼查询，得到这个绑定关系后，再链接服务端。使⽤注册中⼼查找对另⼀ 台主机上已经注册远程对象的引⽤。注册中⼼引导通过远程⽅法来传递远程引⽤</p>
+<p>Server端在定义远程接口时，需要继承<strong>java.rmi.Remote</strong>接口，并且修饰符需要为public（否则远程调用的时候会报错），同时定义的方法里面需要抛出一个<strong>RemoteException</strong>异常；在实现远程接口的时候，需要继承 <strong>UnicastRemoteObject</strong> 类，实现其预定义的接口</p>
+<h2 id="JRMP-amp-WebLogic-T3"><a href="#JRMP-amp-WebLogic-T3" class="headerlink" title="JRMP &amp; WebLogic T3"></a>JRMP &amp; WebLogic T3</h2><p>RMI是基于JRMP协议的，而Weblogic RMI是基于T3协议（也有基于CORBA的IIOP协议）。</p>
+<p>JRMP TODO</p>
+<p>WebLogic RMI是WebLogic对Java RMI的实现，它们之间的不同在于（1）WebLogic的字节码生成功能会自动生成服务端的字节码到内存。不再生成Skeleton骨架对象，也不需要使用UnicastRemoteObject对象（2）在WebLogic RMI 客户端中，字节码生成功能会自动为客户端生成代理对象，因此Stub也不再需要。<br>T3传输协议是WebLogic的自有协议，它有如下特点：（1）服务端可以持续追踪监控客户端是否存活（心跳机制），通常心跳的间隔为60秒，服务端在超过240秒未收到心跳即判定与客户端的连接丢失。（2）通过建立一次连接可以将全部数据包传输完成，优化了数据包大小和网络消耗。</p>
+<h2 id="RMI反序列化攻击"><a href="#RMI反序列化攻击" class="headerlink" title="RMI反序列化攻击"></a>RMI反序列化攻击</h2><p>使用RMI进行反序列化攻击需要两个条件：调用的远程方法接收Object类型的参数、Server端存在执行命令利用链<br>（理解一下原因就是RMI在传输数据的时候会进行序列化，在传输完成后再进行反序列化。那么这时候如果传输一个恶意的序列化数据就会进行反序列化的命令执行）</p>
+<p>RMI的核心之一是可以使⽤动态类加载和安全管理器来安全传输Java类，涉及到一个重要的属性java.rmi.server.codebase：该属性表⽰⼀个或多个URL位置，可以从中下载本地（ CLASSPATH ）找不到的类，相当于⼀个代码库。 </p>
+<p>对于客户端⽽⾔，如果服务端⽅法的返回值可能是⼀些⼦类的对象实例，⽽客户端并没有这些⼦类的class⽂件，如果需要客户端正确调⽤这些⼦类中被重写的⽅法，客户端就需要从服务端提供的 java.rmi.server.codebase URL去加载类；对于服务端⽽⾔，如果客户端传递的⽅法参数是远程对象接⼝⽅法参数类型的⼦类，那么服务端需要从客户端提供的 java.rmi.server.codebase URL去加载对应的类。<br>客户端与服务端两边的 java.rmi.server.codebase URL都是互相传递的。 </p>
+<p>⽆论是客户端还是服务端要远程加载类，都需要满足以下条件：</p>
+<ol>
+<li>由于Java SecurityManager的限制，默认是不允许远程加载的，如果需要进⾏远程加载类，需要安装RMISecurityManager并配置java.security.policy </li>
+<li>.属性java.rmi.server.useCodebaseOnly的值必须为false</li>
+</ol>
+<p>这里其实还有一个利用codebase的攻击，感觉和jndi那套是没有关系的</p>
+<h1 id="JNDI"><a href="#JNDI" class="headerlink" title="JNDI"></a>JNDI</h1><h2 id="基本概念-1"><a href="#基本概念-1" class="headerlink" title="基本概念"></a>基本概念</h2><p>COBRA，LDAP</p>
+<h2 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h2><h2 id="CVE-2021-44228-Log4j2-RCE"><a href="#CVE-2021-44228-Log4j2-RCE" class="headerlink" title="CVE-2021-44228 (Log4j2 RCE)"></a>CVE-2021-44228 (Log4j2 RCE)</h2><p>基本原理：</p>
 <p><a target="_blank" rel="noopener" href="https://xz.aliyun.com/t/6633#toc-7">https://xz.aliyun.com/t/6633#toc-7</a></p>
 <p>将恶意的Reference类绑定在RMI注册表中，其中恶意引用指向远程恶意的class文件，当用户在JNDI客户端的lookup()函数参数外部可控或Reference类构造方法的classFactoryLocation参数外部可控时，会使用户的JNDI客户端访问RMI注册表中绑定的恶意Reference类，从而加载远程服务器上的恶意class文件在客户端本地执行，最终实现JNDI注入攻击导致远程代码执行</p>
 <p>jndi注入的利用条件<br>客户端的lookup()方法的参数可控<br>服务端在使用Reference时，classFactoryLocation参数可控～<br>上面两个都是在编写程序时可能存在的脆弱点（任意一个满足就行），</p>
-<p>CVE-2021-44228 (Log4j2 RCE) </p>
 <p><a target="_blank" rel="noopener" href="https://paper.seebug.org/1789/#0x07">https://paper.seebug.org/1789/#0x07</a></p>
 <p><a target="_blank" rel="noopener" href="https://www.freebuf.com/articles/web/341857.html">https://www.freebuf.com/articles/web/341857.html</a></p>
 <p><a target="_blank" rel="noopener" href="https://www.freebuf.com/articles/web/364311.html">https://www.freebuf.com/articles/web/364311.html</a></p>
 <p>注入手法：<a target="_blank" rel="noopener" href="http://wjlshare.com/archives/1677">http://wjlshare.com/archives/1677</a></p>
-<p>高版本修复与绕过：</p>
+<h2 id="漏洞修复与绕过"><a href="#漏洞修复与绕过" class="headerlink" title="漏洞修复与绕过"></a>漏洞修复与绕过</h2><p>高版本修复与绕过：</p>
 <p>除此之外，jdk版本在jndi注入中也起着至关重要的作用，而且不同的攻击响亮对jdk的版本要求也不一致，这里就全部列出来：</p>
 <p>JDK 6u45、7u21之后：java.rmi.server.useCodebaseOnly的默认值被设置为true。当该值为true时，将禁用自动加载远程类文件，仅从CLASSPATH和当前JVM的java.rmi.server.codebase指定路径加载类文件。使用这个属性来防止客户端VM从其他Codebase地址上动态加载类，增加了RMI ClassLoader的安全性。</p>
 <p>JDK 6u141、7u131、8u121之后：增加了com.sun.jndi.rmi.object.trustURLCodebase选项，默认为false，禁止RMI和CORBA协议使用远程codebase的选项，因此RMI和CORBA在以上的JDK版本上已经无法触发该漏洞，但依然可以通过指定URI为LDAP协议来进行JNDI注入攻击。</p>
 <p>JDK 6u211、7u201、8u191之后：增加了com.sun.jndi.ldap.object.trustURLCodebase选项，默认为false，禁止LDAP协议使用远程codebase的选项，把LDAP协议的攻击途径也给禁了。</p>
 <p><a target="_blank" rel="noopener" href="https://paper.seebug.org/942/">https://paper.seebug.org/942/</a></p>
 <p><a target="_blank" rel="noopener" href="https://tttang.com/archive/1405/">https://tttang.com/archive/1405/</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/SummerSec/JavaLearnVulnerability/tree/master/RMI%20JRMP%20JNDI">https://github.com/SummerSec/JavaLearnVulnerability/tree/master/RMI%20JRMP%20JNDI</a></p>
+<p><a target="_blank" rel="noopener" href="https://kingx.me/Restrictions-and-Bypass-of-JNDI-Manipulations-RCE.html">https://kingx.me/Restrictions-and-Bypass-of-JNDI-Manipulations-RCE.html</a></p>
+<p>对于ldap：还有一个SerializedData的绕过</p>
 <p>CodeQL相关：<a target="_blank" rel="noopener" href="https://tttang.com/archive/1570/%EF%BC%8C">https://tttang.com/archive/1570/，</a> <a target="_blank" rel="noopener" href="https://xz.aliyun.com/t/10707#toc-2%EF%BC%8C">https://xz.aliyun.com/t/10707#toc-2，</a> <a target="_blank" rel="noopener" href="https://tttang.com/archive/1660">https://tttang.com/archive/1660</a></p>
 
       
@@ -411,8 +448,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -427,7 +473,7 @@
               
                 <a href="/archives/%7C%7C%20archive">
               
-                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-count">6</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -463,6 +509,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#RMI"><span class="nav-number">1.</span> <span class="nav-text">RMI</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-number">1.1.</span> <span class="nav-text">基本概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">1.2.</span> <span class="nav-text">工作原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JRMP-amp-WebLogic-T3"><span class="nav-number">1.3.</span> <span class="nav-text">JRMP &amp; WebLogic T3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RMI%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%94%BB%E5%87%BB"><span class="nav-number">1.4.</span> <span class="nav-text">RMI反序列化攻击</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#JNDI"><span class="nav-number">2.</span> <span class="nav-text">JNDI</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5-1"><span class="nav-number">2.1.</span> <span class="nav-text">基本概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86"><span class="nav-number">2.2.</span> <span class="nav-text">漏洞原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CVE-2021-44228-Log4j2-RCE"><span class="nav-number">2.3.</span> <span class="nav-text">CVE-2021-44228 (Log4j2 RCE)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BB%95%E8%BF%87"><span class="nav-number">2.4.</span> <span class="nav-text">漏洞修复与绕过</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
